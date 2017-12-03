@@ -1,6 +1,7 @@
 import gym
 import numpy as np
-from solvers import value_iteration
+from value_iteration import value_iteration
+from q_learning import q_learn
 
 
 env = gym.make('FrozenLake8x8-v0')
@@ -38,8 +39,11 @@ def play_episodes(environment, n_episodes=1000, policy=None, render=False):
      
     return wins, total_reward
 
-n_episodes = 1
-solvers = [('Value iteration', value_iteration)]
+n_episodes = 100
+solvers = [
+    ('Value iteration', value_iteration),
+    ('Q learning', q_learn)
+]
 
 for name, func in solvers:
     print('----- {} -----'.format(name))
@@ -50,6 +54,8 @@ for name, func in solvers:
     
     # Evaluating
     print('Playing...')
-    wins, total_reward = play_episodes(env, n_episodes, policy, True)
+    wins, total_reward = play_episodes(env, n_episodes, policy, False)
 
+    # Print results
     print('{} result:\nWin rate: {}\nAverage reward: {}'.format(name, wins/n_episodes, total_reward/n_episodes))
+    print()
