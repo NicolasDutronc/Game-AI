@@ -10,6 +10,9 @@ action_mapping = {
     3: '\u2190',  # LEFT
 }
 
+class Random_agent:
+    
+
 class Q_learner:
 
 
