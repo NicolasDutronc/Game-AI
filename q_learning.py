@@ -12,6 +12,68 @@ action_mapping = {
 
 class Random_agent:
     
+    def __init__(self, environment, name=None):
+        self.environment = environment
+        self.name = name
+        self.policy=dict()
+    
+    def __str__(self):
+        return self.name
+
+    def get_n_states(self):
+        return self.environment.env.nS
+
+    def get_n_actions(self):
+        return self.environment.action_space.n
+
+    def build_policy(self):
+        for i in range(self.get_n_states()):
+            self.policy[i] = 0
+
+    def get_policy(self, state):
+        return self.choose_action(state)
+
+    def choose_action(self, state):
+        return self.environment.action_space.sample()
+
+    def play_one_episode(self, render=False):
+        current_state = self.environment.reset()
+        done = False
+        win = 0
+        episode_reward = 0
+
+        if render:
+            self.environment.render()
+
+        while not done:
+            action = self.get_policy(current_state)
+            current_state, reward, done, _ = self.environment.step(action)
+
+            if render:
+                self.environment.render()
+
+            if done and reward != 1:
+                reward = -1
+
+        if reward == 1:
+            win += 1
+            episode_reward += 1
+        
+        return win, episode_reward
+
+    def train(self, n_episodes=1e3, verbose=False, render=False, debug=False):
+        return None, None
+
+    def test(self, n_episodes=1e3, verbose=False, render=False):
+        win_rate = 0
+        average_reward = 0
+        for i in range(int(n_episodes)):
+            win, episode_reward = self.play_one_episode(render)
+            win_rate += win
+            average_reward += episode_reward
+        
+        return win_rate / n_episodes, average_reward / n_episodes
+
 
 class Q_learner:
 
@@ -52,6 +114,9 @@ class Q_learner:
             #"""
             return np.argmax(self.q_table[state])
     
+    def get_policy(self, state):
+        return self.policy[state]
+    
     def update_q_table(self, old_state, action, reward, new_state, done):
         if not done:
             self.q_table[old_state][action] = (1 - self.learning_rate) * self.q_table[old_state][action] \
@@ -76,7 +141,7 @@ class Q_learner:
             self.environment.render()
 
         while not done:
-            action = self.policy[current_state]
+            action = self.get_policy(current_state)
             current_state, reward, done, _ = self.environment.step(action)
 
             if render:
@@ -110,7 +175,7 @@ class Q_learner:
             time_step = 0
 
             if verbose:
-                print('Episode n°', i+1)
+                print('Episode n°', (i+1))
                 print('Current win rate:', win_rate/(i+1))
                 print('Current average reward:', average_reward/(i+1))
             
@@ -184,7 +249,7 @@ env = gym.make('FrozenLake8x8-v0')
 agents = []
 
 q_learner = Q_learner(env, name='Q agent')
-random_agent = Q_learner(env, exploration_rate=1, name='Random agent')
+random_agent = Random_agent(env, name='Random agent')
 
 agents.append(q_learner)
 agents.append(random_agent)
@@ -196,7 +261,7 @@ for agent in agents:
     print('Average reward:', average_reward)
     print('Win rate:', win_rate)
     print('Testing...')
-    print(agent.test(n_episodes=1e5, render=False))
+    print(agent.test(n_episodes=1e3, render=False))
     print()
     print()
 
