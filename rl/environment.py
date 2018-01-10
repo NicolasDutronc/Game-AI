@@ -16,10 +16,10 @@ class Environment:
     def preprocess(self, image):
         image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
         # print(image.shape)
-        image = cv2.resize(image, resize)
+        image = cv2.resize(image, self.image_shape)
         # print(image.shape)
         image = image/255
-        image = image.reshape((1, 84, 84))
+        image = image.reshape(self.image_shape)
         # print(image.shape)
         return image
     

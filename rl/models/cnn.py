@@ -7,7 +7,7 @@ class CNNModel(nn.Module):
 
     def __init__(self, action_space):
         super(CNNModel, self).__init__()
-        self.conv1 = nn.Conv2d(in_channels=1, out_channels=32, kernel_size=8, stride=4) # 20
+        self.conv1 = nn.Conv2d(in_channels=4, out_channels=32, kernel_size=8, stride=4) # 20
         self.bn1 = nn.BatchNorm2d(num_features=32)
         self.conv2 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=4, stride=2) # 9
         self.bn2 = nn.BatchNorm2d(num_features=64)
