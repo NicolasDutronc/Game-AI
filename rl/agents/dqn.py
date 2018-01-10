@@ -10,33 +10,42 @@ from torch.autograd import Variable
 
 class DQNAgent:
 
-    def __init__(self, environment, model, optimizer, loss, model_path='./model.pt', save_model_freq=100, update_target_freq=1000, update_model_freq=16, replay_size_start=1000, action_repeat=4, \
-    frame_skipping=4, discount_factor=0.99, exploration_rate_start=1, exploration_rate_end=0.1, exploration_decay=1e-5):
+    def __init__(self, environment, model, optimizer, loss, model_path='./model.pt', save_model_freq=100, update_target_freq=10000, update_model_freq=4, replay_size_start=50000, action_repeat=4, \
+    frame_skipping=4, discount_factor=0.99, exploration_rate_start=1, exploration_rate_end=0.1, exploration_decay=1e6):
+
+        # objects
         self.environment = environment
         self.model = model
         self.target_model = copy.deepcopy(self.model)
         self.optimizer = optimizer
         self.loss = loss
         self.model_path = model_path
+        self.state_buffer = deque(maxlen=action_repeat)
+        self.replay_memory = Experience_buffer()
+
+        # counters
         self.num_updates = 0
         self.num_steps = 0
+
+        # frequences
         self.save_model_freq = save_model_freq
         self.update_target_freq = update_target_freq
         self.update_model_freq = update_model_freq
+
+        # other parameters
         self.replay_size_start = replay_size_start
         self.action_repeat = action_repeat
         self.frame_skipping = frame_skipping
         self.discount_factor = discount_factor
-        self.state_buffer = deque(maxlen=self.action_repeat)
-        self.replay_memory = Experience_buffer()
-        self.exploration_rate_start = exploration_rate_start
-        self.exploration_rate_end = exploration_rate_end
-        self.exploration_decay = exploration_decay
-        self.exploration_rate = self.exploration_rate_start
+        
+        # exploration parameters
+        self.exploration_rate = exploration_rate_start
+        self.exploration_rate_step = (exploration_rate_start - exploration_rate_end) / exploration_decay
 
     def select_action(self, state):
         self.num_steps += 1
-        self.exploration_rate = self.exploration_rate_end + (self.exploration_rate_start - self.exploration_rate_end) * math.exp(-1. * self.num_steps / self.exploration_decay)
+        if self.num_steps < self.replay_size_start:
+            self.exploration_rate -= self.exploration_rate_step
         if np.random.rand() < self.exploration_rate:
             return self.environment.random_action()
         else:
@@ -68,8 +77,7 @@ class DQNAgent:
         self.optimizer.step()
         self.num_updates += 1
         
-        if self.num_updates % self.update_target_freq:
-            print('INFO: target updating...')
+        if self.num_updates % self.update_target_freq == 0:
             self.update_target()
 
         return loss.data[0]
@@ -79,6 +87,7 @@ class DQNAgent:
         torch.save(self.model, self.model_path)
 
     def update_target(self):
+        print('INFO TARGET: target updating... -----------------------------------------------------------------------------------')
         self.target_model.load_state_dict(self.model.state_dict())
     
     def get_recent_states(self):
@@ -125,7 +134,7 @@ class DQNAgent:
                     batch = self.replay_memory.sample(batch_size)
                     current_loss = self.update(batch)
             
-            if i % self.save_model_freq == 0:
+            if i % self.save_model_freq == 0 and self.num_steps > self.replay_size_start:
                 self.save_model()
             
             if verbose:
