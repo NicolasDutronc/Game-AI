@@ -40,11 +40,12 @@ class DQNAgent:
         
         # exploration parameters
         self.exploration_rate = exploration_rate_start
+        self.exploration_rate_end = exploration_rate_end
         self.exploration_rate_step = (exploration_rate_start - exploration_rate_end) / exploration_decay
 
     def select_action(self, state):
         self.num_steps += 1
-        if self.num_steps < self.replay_size_start:
+        if self.num_steps > self.replay_size_start and self.exploration_rate > self.exploration_rate_end:
             self.exploration_rate -= self.exploration_rate_step
         if np.random.rand() < self.exploration_rate:
             return self.environment.random_action()
@@ -62,7 +63,12 @@ class DQNAgent:
         
         next_max_q_values = self.target_model(next_obs)
         next_max_q_values = Variable(next_max_q_values.data)
-        next_max_q_values, _ = next_max_q_values.max(dim=1, keepdim=True)
+
+        best_actions = self.model(next_obs)
+        best_actions = Variable(best_actions.data)
+        _, best_actions = best_actions.max(dim=1, keepdim=True)
+
+        next_max_q_values = next_max_q_values.gather(1, best_actions)
         next_max_q_values = next_max_q_values * dones.unsqueeze(1)
 
         current_q_values = self.model(observations).gather(1, actions.unsqueeze(1)).squeeze()
@@ -91,7 +97,7 @@ class DQNAgent:
         self.target_model.load_state_dict(self.model.state_dict())
     
     def get_recent_states(self):
-        return np.array(self.state_buffer, dtype='float')
+        return np.array(self.state_buffer)
     
     def train(self, num_episodes=10000, batch_size=32, verbose=True):
         for i in range(num_episodes):
@@ -99,32 +105,36 @@ class DQNAgent:
                 print('Episode #', i)
             done = False
             episode_reward = 0
+            num_episode_steps = 0
             current_loss = 0
             self.environment.reset()
 
             # get first observation
             current_obs = self.environment.get_screen()
-            current_obs = np.stack([current_obs for _ in range(self.action_repeat)], axis=0)
             self.state_buffer = deque(maxlen=self.action_repeat)
             for _ in range(self.action_repeat):
                 self.state_buffer.append(current_obs)
             
             while not done:
+                current_obs = self.get_recent_states()
                 action = self.select_action(current_obs)
-                reward = 0
+                num_episode_steps += 1
 
                 # skip some frames
-                for _ in range(self.frame_skipping):
-                    _, reward, done, _ = self.environment.step(action)
-                    self.state_buffer.append(self.environment.get_screen())
-                    if done:
-                        break
+                #for _ in range(self.frame_skipping):
+                #    _, reward, done, _ = self.environment.step(action)
+                #    self.state_buffer.append(self.environment.get_screen())
+                #    if done:
+                #        break
+
+                _, reward, done, _ = self.environment.step(action)
+                self.state_buffer.append(self.environment.get_screen())
+                reward = num_episode_steps
 
                 next_obs = self.get_recent_states()
                 self.replay_memory.add(current_obs, action, reward, next_obs, done)
 
-                # update memory
-                current_obs = next_obs
+                # update satistics
                 episode_reward += reward
                 
                 # if the buffer is filled enough, periodically update the model
