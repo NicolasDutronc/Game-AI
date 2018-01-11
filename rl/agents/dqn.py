@@ -10,8 +10,8 @@ from torch.autograd import Variable
 
 class DQNAgent:
 
-    def __init__(self, environment, model, optimizer, loss, model_path='./model.pt', save_model_freq=100, update_target_freq=10000, update_model_freq=4, replay_size_start=50000, action_repeat=4, \
-    frame_skipping=4, discount_factor=0.99, exploration_rate_start=1, exploration_rate_end=0.1, exploration_decay=1e6):
+    def __init__(self, environment, model, optimizer, loss, model_path='./model.pt', save_model_freq=100, update_target_freq=5000, update_model_freq=4, replay_size_start=50000, action_repeat=4, \
+    frame_skipping=4, discount_factor=0.99, exploration_rate_start=1, exploration_rate_end=0.1, exploration_decay=5e4):
 
         # objects
         self.environment = environment
@@ -37,6 +37,7 @@ class DQNAgent:
         self.action_repeat = action_repeat
         self.frame_skipping = frame_skipping
         self.discount_factor = discount_factor
+        self.current_best_reward = 0
         
         # exploration parameters
         self.exploration_rate = exploration_rate_start
@@ -147,7 +148,14 @@ class DQNAgent:
             if i % self.save_model_freq == 0 and self.num_steps > self.replay_size_start:
                 self.save_model()
             
+            if episode_reward > self.current_best_reward:
+                self.current_best_reward = episode_reward
+            
             if verbose:
-                print('Reward:'.format(i), episode_reward)
-                print('Current loss:'.format(i), current_loss)
+                print('Reward:', episode_reward)
+                print('Current loss:', current_loss)
+                print('Current exploration rate:', self.exploration_rate)
+                print('Number of steps:', self.num_steps)
+                print('Number of updates:', self.num_updates)
+                print('Current best reward:', self.current_best_reward)
                 print()
