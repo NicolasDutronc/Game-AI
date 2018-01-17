@@ -7,7 +7,7 @@ Transition = namedtuple('Transition', ['obs', 'action', 'reward', 'next_obs', 'd
 
 class Experience_buffer:
 
-    def __init__(self, buffer_size=1000000):
+    def __init__(self, buffer_size=10000):
         self.buffer = deque()
         self.buffer_size = buffer_size
 
