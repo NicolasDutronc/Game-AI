@@ -11,8 +11,23 @@ from torch.autograd import Variable
 
 class DQNAgent:
 
-    def __init__(self, environment, model=None, optimizer=None, loss=None, model_path='./model.pt', save_model_freq=5, update_target_freq=1000, update_model_freq=4, replay_size_start=5000, action_repeat=4, \
-    frame_skipping=4, discount_factor=0.99, exploration_rate_start=0.2, exploration_rate_end=0.01, exploration_decay=1e5):
+    def __init__(
+        self,
+        environment,
+        model=None,
+        optimizer=None,
+        loss=None, 
+        model_path='./model.pt', 
+        save_model_freq=5, 
+        update_target_freq=1000, 
+        update_model_freq=4, 
+        replay_size_start=5000, 
+        action_repeat=4,
+        frame_skipping=4, 
+        discount_factor=0.99, 
+        exploration_rate_start=0.2, 
+        exploration_rate_end=0.01, 
+        exploration_decay=1e5):
 
         # objects
         self.environment = environment
